@@ -1,10 +1,14 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TrendingUp, DollarSign, Zap, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { TrendingUp, DollarSign, Zap, Clock, Upload, Inbox } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { useData } from "@/context/DataContext";
+import { Link } from "react-router-dom";
 
 const Reports = () => {
+  const { isDataLoaded } = useData();
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -26,56 +30,69 @@ const Reports = () => {
 
           <TabsContent value="overview" className="space-y-4">
             {/* Key Metrics */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardDescription>Total Processed (MTD)</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">$8.4M</div>
-                  <div className="flex items-center gap-1 text-xs text-success mt-1">
-                    <TrendingUp className="h-3 w-3" />
-                    +18.2% vs last month
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardDescription>Automation Rate</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">94.5%</div>
-                  <div className="flex items-center gap-1 text-xs text-success mt-1">
-                    <Zap className="h-3 w-3" />
-                    +2.1% improvement
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardDescription>Time Saved</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">127 hrs</div>
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                    <Clock className="h-3 w-3" />
-                    This month
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardDescription>Cost Savings</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">$12,400</div>
-                  <div className="flex items-center gap-1 text-xs text-success mt-1">
-                    <DollarSign className="h-3 w-3" />
-                    vs manual processing
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            {!isDataLoaded ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <Inbox className="h-12 w-12 text-muted-foreground mb-4" />
+                <p className="text-muted-foreground mb-4">No data available</p>
+                <Link to="/upload">
+                  <Button variant="outline">
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload Data
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardDescription>Total Processed (MTD)</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{isDataLoaded ? "$8.4M" : "$0"}</div>
+                    <div className="flex items-center gap-1 text-xs text-success mt-1">
+                      <TrendingUp className="h-3 w-3" />
+                      {isDataLoaded ? "+18.2% vs last month" : "N/A"}
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardDescription>Automation Rate</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{isDataLoaded ? "94.5%" : "0%"}</div>
+                    <div className="flex items-center gap-1 text-xs text-success mt-1">
+                      <Zap className="h-3 w-3" />
+                      {isDataLoaded ? "+2.1% improvement" : "N/A"}
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardDescription>Time Saved</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{isDataLoaded ? "127 hrs" : "0 hrs"}</div>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                      <Clock className="h-3 w-3" />
+                      This month
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardDescription>Cost Savings</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{isDataLoaded ? "$12,400" : "$0"}</div>
+                    <div className="flex items-center gap-1 text-xs text-success mt-1">
+                      <DollarSign className="h-3 w-3" />
+                      vs manual processing
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
 
             {/* Charts Placeholder */}
             <div className="grid gap-4 md:grid-cols-2">
@@ -118,9 +135,9 @@ const Reports = () => {
                       <h4 className="font-medium">Exact Matches</h4>
                       <p className="text-sm text-muted-foreground">Perfect name & amount match</p>
                     </div>
-                    <span className="text-2xl font-bold text-success">72%</span>
+                    <span className="text-2xl font-bold text-success">{isDataLoaded ? "72%" : "0%"}</span>
                   </div>
-                  <Progress value={72} className="h-2" />
+                  <Progress value={isDataLoaded ? 72 : 0} className="h-2" />
                 </div>
 
                 <div>
@@ -129,9 +146,9 @@ const Reports = () => {
                       <h4 className="font-medium">Fuzzy Matches</h4>
                       <p className="text-sm text-muted-foreground">AI-corrected name variations</p>
                     </div>
-                    <span className="text-2xl font-bold text-primary">18%</span>
+                    <span className="text-2xl font-bold text-primary">{isDataLoaded ? "18%" : "0%"}</span>
                   </div>
-                  <Progress value={18} className="h-2" />
+                  <Progress value={isDataLoaded ? 18 : 0} className="h-2" />
                 </div>
 
                 <div>
@@ -140,9 +157,9 @@ const Reports = () => {
                       <h4 className="font-medium">Contextual Matches</h4>
                       <p className="text-sm text-muted-foreground">Advanced AI reasoning</p>
                     </div>
-                    <span className="text-2xl font-bold text-accent">8%</span>
+                    <span className="text-2xl font-bold text-accent">{isDataLoaded ? "8%" : "0%"}</span>
                   </div>
-                  <Progress value={8} className="h-2" />
+                  <Progress value={isDataLoaded ? 8 : 0} className="h-2" />
                 </div>
 
                 <div>
@@ -151,9 +168,9 @@ const Reports = () => {
                       <h4 className="font-medium">Manual Review</h4>
                       <p className="text-sm text-muted-foreground">Requires human validation</p>
                     </div>
-                    <span className="text-2xl font-bold text-warning">2%</span>
+                    <span className="text-2xl font-bold text-warning">{isDataLoaded ? "2%" : "0%"}</span>
                   </div>
-                  <Progress value={2} className="h-2" />
+                  <Progress value={isDataLoaded ? 2 : 0} className="h-2" />
                 </div>
               </CardContent>
             </Card>
@@ -181,18 +198,18 @@ const Reports = () => {
                 <div className="grid gap-4 md:grid-cols-3">
                   <div className="p-4 rounded-lg border border-border">
                     <p className="text-sm text-muted-foreground mb-1">Manual Processing Cost</p>
-                    <p className="text-2xl font-bold text-destructive">$18,500</p>
+                    <p className="text-2xl font-bold text-destructive">{isDataLoaded ? "$18,500" : "$0"}</p>
                     <p className="text-xs text-muted-foreground mt-1">Per month (estimated)</p>
                   </div>
                   <div className="p-4 rounded-lg border border-border">
                     <p className="text-sm text-muted-foreground mb-1">Automated Cost</p>
-                    <p className="text-2xl font-bold text-primary">$6,100</p>
+                    <p className="text-2xl font-bold text-primary">{isDataLoaded ? "$6,100" : "$0"}</p>
                     <p className="text-xs text-muted-foreground mt-1">Per month (actual)</p>
                   </div>
                   <div className="p-4 rounded-lg border border-success bg-success/5">
                     <p className="text-sm text-muted-foreground mb-1">Net Savings</p>
-                    <p className="text-2xl font-bold text-success">$12,400</p>
-                    <p className="text-xs text-success mt-1">67% cost reduction</p>
+                    <p className="text-2xl font-bold text-success">{isDataLoaded ? "$12,400" : "$0"}</p>
+                    <p className="text-xs text-success mt-1">{isDataLoaded ? "67% cost reduction" : "N/A"}</p>
                   </div>
                 </div>
 

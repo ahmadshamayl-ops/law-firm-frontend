@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, AlertCircle, ArrowRight, TrendingUp } from "lucide-react";
+import { CheckCircle, AlertCircle, ArrowRight, TrendingUp, Upload, Inbox } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -12,8 +12,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useData } from "@/context/DataContext";
+import { Link } from "react-router-dom";
 
 const Matches = () => {
+  const { isDataLoaded } = useData();
+
+  // Original dummy data
   const matches = [
     {
       paymentRef: "TRX-554982",
@@ -98,7 +103,7 @@ const Matches = () => {
             <CardContent>
               <div className="text-2xl font-bold flex items-center gap-2">
                 <CheckCircle className="h-5 w-5 text-success" />
-                487
+                {isDataLoaded ? "487" : "0"}
               </div>
             </CardContent>
           </Card>
@@ -109,7 +114,7 @@ const Matches = () => {
             <CardContent>
               <div className="text-2xl font-bold flex items-center gap-2">
                 <AlertCircle className="h-5 w-5 text-warning" />
-                23
+                {isDataLoaded ? "23" : "0"}
               </div>
             </CardContent>
           </Card>
@@ -120,7 +125,7 @@ const Matches = () => {
             <CardContent>
               <div className="text-2xl font-bold flex items-center gap-2">
                 <TrendingUp className="h-5 w-5 text-primary" />
-                98.2%
+                {isDataLoaded ? "98.2%" : "0%"}
               </div>
             </CardContent>
           </Card>
@@ -129,7 +134,7 @@ const Matches = () => {
               <CardDescription>Avg. Confidence</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">95.2%</div>
+              <div className="text-2xl font-bold">{isDataLoaded ? "95.2%" : "0%"}</div>
             </CardContent>
           </Card>
         </div>
@@ -143,72 +148,87 @@ const Matches = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Payment Ref</TableHead>
-                  <TableHead>Payer</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Matched Invoice</TableHead>
-                  <TableHead>Match Type</TableHead>
-                  <TableHead>Confidence</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {matches.map((match) => (
-                  <TableRow key={match.paymentRef} className="hover:bg-secondary/50">
-                    <TableCell className="font-medium">{match.paymentRef}</TableCell>
-                    <TableCell>{match.payer}</TableCell>
-                    <TableCell className="font-semibold">{match.amount}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-primary">{match.invoice}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="secondary"
-                        className={getMatchTypeBadge(match.matchType)}
-                      >
-                        {match.matchType}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className={`font-medium ${getConfidenceColor(match.confidence)}`}>
-                            {match.confidence}%
-                          </span>
-                        </div>
-                        <Progress value={match.confidence} className="h-1.5" />
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={match.status === "posted" ? "default" : "secondary"}
-                        className={
-                          match.status === "posted"
-                            ? "bg-success/10 text-success"
-                            : "bg-warning/10 text-warning"
-                        }
-                      >
-                        {match.status === "posted" ? "Auto-Posted" : "Review"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {match.status === "review" && (
-                        <Button size="sm" variant="outline">
-                          Review
-                        </Button>
-                      )}
-                    </TableCell>
+            {!isDataLoaded || matches.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <Inbox className="h-12 w-12 text-muted-foreground mb-4" />
+                <p className="text-muted-foreground mb-4">No matches found</p>
+                {!isDataLoaded && (
+                  <Link to="/upload">
+                    <Button variant="outline">
+                      <Upload className="mr-2 h-4 w-4" />
+                      Upload Data
+                    </Button>
+                  </Link>
+                )}
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Payment Ref</TableHead>
+                    <TableHead>Payer</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Matched Invoice</TableHead>
+                    <TableHead>Match Type</TableHead>
+                    <TableHead>Confidence</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {matches.map((match) => (
+                    <TableRow key={match.paymentRef} className="hover:bg-secondary/50">
+                      <TableCell className="font-medium">{match.paymentRef}</TableCell>
+                      <TableCell>{match.payer}</TableCell>
+                      <TableCell className="font-semibold">{match.amount}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-primary">{match.invoice}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="secondary"
+                          className={getMatchTypeBadge(match.matchType)}
+                        >
+                          {match.matchType}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className={`font-medium ${getConfidenceColor(match.confidence)}`}>
+                              {match.confidence}%
+                            </span>
+                          </div>
+                          <Progress value={match.confidence} className="h-1.5" />
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={match.status === "posted" ? "default" : "secondary"}
+                          className={
+                            match.status === "posted"
+                              ? "bg-success/10 text-success"
+                              : "bg-warning/10 text-warning"
+                          }
+                        >
+                          {match.status === "posted" ? "Auto-Posted" : "Review"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {match.status === "review" && (
+                          <Button size="sm" variant="outline">
+                            Review
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
 
