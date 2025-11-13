@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,60 +13,81 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { api } from "@/lib/api";
+import { toast } from "sonner";
+
+interface Invoice {
+  id: number;
+  invoice_number: string;
+  client_name: string;
+  matter_number: string;
+  invoice_date: string;
+  due_date: string;
+  amount: number;
+  currency: string;
+  status: string;
+}
+
+interface InvoiceSummary {
+  total_outstanding: number;
+  avg_invoice_value: number;
+  avg_days_outstanding: number;
+  invoice_count: number;
+}
 
 const Invoices = () => {
-  const invoices = [
-    {
-      id: "INV-2025-001",
-      client: "ABC Holdings Ltd",
-      matter: "MTR-1029",
-      date: "2025-10-10",
-      amount: "$125,000.00",
-      currency: "USD",
-      dueDate: "2025-11-09",
-      status: "pending",
-    },
-    {
-      id: "INV-2025-002",
-      client: "Orion Real Estate",
-      matter: "MTR-1132",
-      date: "2025-10-12",
-      amount: "$68,500.00",
-      currency: "USD",
-      dueDate: "2025-11-11",
-      status: "pending",
-    },
-    {
-      id: "INV-2025-003",
-      client: "Zenith Energy Corp.",
-      matter: "MTR-1204",
-      date: "2025-10-15",
-      amount: "$93,200.00",
-      currency: "GBP",
-      dueDate: "2025-11-14",
-      status: "pending",
-    },
-    {
-      id: "INV-2025-004",
-      client: "Federal Motors",
-      matter: "MTR-1158",
-      date: "2025-10-16",
-      amount: "$34,800.00",
-      currency: "USD",
-      dueDate: "2025-11-15",
-      status: "pending",
-    },
-    {
-      id: "INV-2025-005",
-      client: "Nova Shipping Co.",
-      matter: "MTR-1087",
-      date: "2025-10-18",
-      amount: "$17,500.00",
-      currency: "EUR",
-      dueDate: "2025-11-17",
-      status: "pending",
-    },
-  ];
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [summary, setSummary] = useState<InvoiceSummary | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const [invoicesData, summaryData] = await Promise.all([
+        api.getInvoices(),
+        api.getInvoiceSummary(),
+      ]);
+      setInvoices(invoicesData);
+      setSummary(summaryData);
+    } catch (error: any) {
+      console.error("Error fetching invoices:", error);
+      toast.error("Failed to load invoices");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  const formatCurrency = (amount: number, currency: string = "USD") => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency,
+    }).format(amount);
+  };
+
+  const filteredInvoices = invoices.filter(
+    (invoice) =>
+      invoice.invoice_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      invoice.client_name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -91,9 +113,11 @@ const Invoices = () => {
               <CardDescription>Total Outstanding</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$339,000.00</div>
+              <div className="text-2xl font-bold">
+                {summary ? formatCurrency(summary.total_outstanding) : "$0.00"}
+              </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Across 5 invoices
+                Across {summary?.invoice_count || 0} invoices
               </p>
             </CardContent>
           </Card>
@@ -102,10 +126,10 @@ const Invoices = () => {
               <CardDescription>Avg. Invoice Value</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$67,800.00</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Per invoice
-              </p>
+              <div className="text-2xl font-bold">
+                {summary ? formatCurrency(summary.avg_invoice_value) : "$0.00"}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Per invoice</p>
             </CardContent>
           </Card>
           <Card>
@@ -113,10 +137,10 @@ const Invoices = () => {
               <CardDescription>Avg. Days Outstanding</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">18 days</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Average aging
-              </p>
+              <div className="text-2xl font-bold">
+                {summary?.avg_days_outstanding || 0} days
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Average aging</p>
             </CardContent>
           </Card>
         </div>
@@ -131,54 +155,80 @@ const Invoices = () => {
               </div>
               <div className="relative w-64">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search invoices..." className="pl-8" />
+                <Input
+                  placeholder="Search invoices..."
+                  className="pl-8"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
               </div>
             </div>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Invoice ID</TableHead>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Matter</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Due Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {invoices.map((invoice) => (
-                  <TableRow key={invoice.id} className="hover:bg-secondary/50">
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                        {invoice.id}
-                      </div>
-                    </TableCell>
-                    <TableCell>{invoice.client}</TableCell>
-                    <TableCell>
-                      <span className="text-muted-foreground">{invoice.matter}</span>
-                    </TableCell>
-                    <TableCell>{invoice.date}</TableCell>
-                    <TableCell className="font-semibold">{invoice.amount}</TableCell>
-                    <TableCell>{invoice.dueDate}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="bg-warning/10 text-warning">
-                        Pending
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="sm">
-                        View
-                      </Button>
-                    </TableCell>
+            {filteredInvoices.length === 0 ? (
+              <div className="text-center py-12">
+                <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground">
+                  No invoices found. Upload files in Settings to get started.
+                </p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Invoice ID</TableHead>
+                    <TableHead>Client</TableHead>
+                    <TableHead>Matter</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Due Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredInvoices.map((invoice) => (
+                    <TableRow key={invoice.id} className="hover:bg-secondary/50">
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          {invoice.invoice_number}
+                        </div>
+                      </TableCell>
+                      <TableCell>{invoice.client_name}</TableCell>
+                      <TableCell>
+                        <span className="text-muted-foreground">
+                          {invoice.matter_number || "N/A"}
+                        </span>
+                      </TableCell>
+                      <TableCell>{formatDate(invoice.invoice_date)}</TableCell>
+                      <TableCell className="font-semibold">
+                        {formatCurrency(invoice.amount, invoice.currency)}
+                      </TableCell>
+                      <TableCell>{formatDate(invoice.due_date)}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="secondary"
+                          className={
+                            invoice.status === "paid"
+                              ? "bg-success/10 text-success"
+                              : "bg-warning/10 text-warning"
+                          }
+                        >
+                          {invoice.status.charAt(0).toUpperCase() +
+                            invoice.status.slice(1)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm">
+                          View
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       </div>
