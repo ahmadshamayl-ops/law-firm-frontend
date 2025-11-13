@@ -5,8 +5,17 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { FileUpload } from "@/components/FileUpload";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 const Settings = () => {
+  const { user } = useAuth();
+
+  const handleFileUploadComplete = () => {
+    toast.success("File processed successfully! Check Dashboard for results.");
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -14,12 +23,14 @@ const Settings = () => {
         <div>
           <h1 className="text-3xl font-bold mb-2">Settings</h1>
           <p className="text-muted-foreground">
-            Configure your CashPost AI preferences
+            Configure your CashPost AI preferences and upload files
           </p>
         </div>
 
         {/* Settings Cards */}
         <div className="space-y-6">
+          {/* File Upload */}
+          <FileUpload onUploadComplete={handleFileUploadComplete} />
           {/* Account Settings */}
           <Card>
             <CardHeader>
@@ -29,11 +40,11 @@ const Settings = () => {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
-                <Input id="name" defaultValue="John Doe" />
+                <Input id="name" defaultValue={user?.full_name || ""} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" defaultValue="john.doe@lawfirm.com" />
+                <Input id="email" type="email" defaultValue={user?.email || ""} readOnly />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="company">Company</Label>

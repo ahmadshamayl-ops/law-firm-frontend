@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,75 +15,106 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
+import { api } from "@/lib/api";
+import { toast } from "sonner";
+
+interface DashboardStats {
+  total_processed: number;
+  total_processed_change: number;
+  match_rate: number;
+  match_rate_change: number;
+  pending_review: number;
+  pending_review_change: number;
+  auto_posted: number;
+  auto_posted_change: number;
+}
+
+interface PerformanceMetrics {
+  auto_match_rate: number;
+  processing_speed: number;
+  data_quality: number;
+}
+
+interface RecentMatch {
+  id: string;
+  payer: string;
+  invoice: string;
+  amount: string;
+  confidence: number;
+  status: string;
+}
 
 const Dashboard = () => {
-  const stats = [
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
+  const [recentMatches, setRecentMatches] = useState<RecentMatch[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [statsData, metricsData, matchesData] = await Promise.all([
+          api.getDashboardStats(),
+          api.getPerformanceMetrics(),
+          api.getRecentMatches(4),
+        ]);
+
+        setStats(statsData);
+        setMetrics(metricsData);
+        setRecentMatches(matchesData);
+      } catch (error: any) {
+        console.error("Error fetching dashboard data:", error);
+        toast.error("Failed to load dashboard data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const statCards = [
     {
       title: "Total Processed",
-      value: "$2,847,290",
-      change: "+12.5%",
+      value: `$${stats?.total_processed.toLocaleString() || 0}`,
+      change: `+${stats?.total_processed_change || 0}%`,
       trend: "up",
       icon: DollarSign,
       color: "text-primary",
     },
     {
       title: "Match Rate",
-      value: "98.2%",
-      change: "+2.1%",
+      value: `${stats?.match_rate || 0}%`,
+      change: `+${stats?.match_rate_change || 0}%`,
       trend: "up",
       icon: CheckCircle,
       color: "text-success",
     },
     {
       title: "Pending Review",
-      value: "23",
-      change: "-8",
-      trend: "down",
+      value: stats?.pending_review || 0,
+      change: `${stats?.pending_review_change || 0}`,
+      trend: (stats?.pending_review_change || 0) < 0 ? "down" : "up",
       icon: AlertCircle,
       color: "text-warning",
     },
     {
       title: "Auto-Posted",
-      value: "487",
-      change: "+94",
+      value: stats?.auto_posted || 0,
+      change: `+${stats?.auto_posted_change || 0}`,
       trend: "up",
       icon: Zap,
       color: "text-accent",
-    },
-  ];
-
-  const recentMatches = [
-    {
-      id: "TRX-554982",
-      payer: "Acme Holdings",
-      invoice: "INV-2025-001",
-      amount: "$24,500",
-      confidence: 99,
-      status: "posted",
-    },
-    {
-      id: "TRX-555142",
-      payer: "Global Tech Ltd",
-      invoice: "INV-2025-002",
-      amount: "$31,150",
-      confidence: 94,
-      status: "posted",
-    },
-    {
-      id: "TRX-555490",
-      payer: "Silverstone Cap",
-      invoice: "INV-2025-003",
-      amount: "$18,750",
-      confidence: 98,
-      status: "posted",
-    },
-    {
-      id: "TRX-555812",
-      payer: "Horizon Infra",
-      invoice: "INV-2025-004",
-      amount: "$45,000",
-      confidence: 87,
-      status: "review",
     },
   ];
 
@@ -99,7 +131,7 @@ const Dashboard = () => {
 
         {/* Stats Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {stats.map((stat) => (
+          {statCards.map((stat) => (
             <Card key={stat.title} className="hover:shadow-md transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -141,35 +173,41 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {recentMatches.map((match) => (
-                  <div
-                    key={match.id}
-                    className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-secondary/50 transition-colors"
-                  >
-                    <div className="flex-1">
-                      <div className="font-medium text-sm">{match.payer}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {match.id} → {match.invoice}
-                      </div>
-                    </div>
-                    <div className="text-right mr-4">
-                      <div className="font-semibold text-sm">{match.amount}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {match.confidence}% confidence
-                      </div>
-                    </div>
-                    <Badge
-                      variant={match.status === "posted" ? "default" : "secondary"}
-                      className={
-                        match.status === "posted"
-                          ? "bg-success/10 text-success hover:bg-success/20"
-                          : "bg-warning/10 text-warning hover:bg-warning/20"
-                      }
+                {recentMatches.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    No matches yet. Upload files to get started.
+                  </p>
+                ) : (
+                  recentMatches.map((match) => (
+                    <div
+                      key={match.id}
+                      className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-secondary/50 transition-colors"
                     >
-                      {match.status === "posted" ? "Posted" : "Review"}
-                    </Badge>
-                  </div>
-                ))}
+                      <div className="flex-1">
+                        <div className="font-medium text-sm">{match.payer}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {match.id} → {match.invoice}
+                        </div>
+                      </div>
+                      <div className="text-right mr-4">
+                        <div className="font-semibold text-sm">{match.amount}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {match.confidence}% confidence
+                        </div>
+                      </div>
+                      <Badge
+                        variant={match.status === "posted" ? "default" : "secondary"}
+                        className={
+                          match.status === "posted"
+                            ? "bg-success/10 text-success hover:bg-success/20"
+                            : "bg-warning/10 text-warning hover:bg-warning/20"
+                        }
+                      >
+                        {match.status === "posted" ? "Posted" : "Review"}
+                      </Badge>
+                    </div>
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
@@ -186,23 +224,29 @@ const Dashboard = () => {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium">Auto-Match Rate</span>
-                    <span className="text-sm text-muted-foreground">98.2%</span>
+                    <span className="text-sm text-muted-foreground">
+                      {metrics?.auto_match_rate || 0}%
+                    </span>
                   </div>
-                  <Progress value={98.2} className="h-2" />
+                  <Progress value={metrics?.auto_match_rate || 0} className="h-2" />
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium">Processing Speed</span>
-                    <span className="text-sm text-muted-foreground">92%</span>
+                    <span className="text-sm text-muted-foreground">
+                      {metrics?.processing_speed || 0}%
+                    </span>
                   </div>
-                  <Progress value={92} className="h-2" />
+                  <Progress value={metrics?.processing_speed || 0} className="h-2" />
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium">Data Quality</span>
-                    <span className="text-sm text-muted-foreground">96%</span>
+                    <span className="text-sm text-muted-foreground">
+                      {metrics?.data_quality || 0}%
+                    </span>
                   </div>
-                  <Progress value={96} className="h-2" />
+                  <Progress value={metrics?.data_quality || 0} className="h-2" />
                 </div>
               </CardContent>
             </Card>
