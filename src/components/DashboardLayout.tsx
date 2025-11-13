@@ -8,6 +8,7 @@ import {
   Settings,
   LogOut,
   Zap,
+  Upload,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
@@ -23,6 +24,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { icon: FileText, label: "Invoices", path: "/invoices" },
     { icon: GitMerge, label: "Matches", path: "/matches" },
     { icon: BarChart3, label: "Reports", path: "/reports" },
+    { icon: Upload, label: "Upload", path: "/upload" },
     { icon: Settings, label: "Settings", path: "/settings" },
   ];
 

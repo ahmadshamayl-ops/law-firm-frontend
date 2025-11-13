@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Download, FileText } from "lucide-react";
+import { Search, Download, FileText, Upload, Inbox } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -12,8 +12,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useData } from "@/context/DataContext";
+import { Link } from "react-router-dom";
+import { useState } from "react";
 
 const Invoices = () => {
+  const { isDataLoaded } = useData();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Original dummy data
   const invoices = [
     {
       id: "INV-2025-001",
@@ -67,6 +74,16 @@ const Invoices = () => {
     },
   ];
 
+  const filteredInvoices = invoices.filter((invoice) => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      invoice.id.toLowerCase().includes(query) ||
+      invoice.client.toLowerCase().includes(query) ||
+      invoice.matter.toLowerCase().includes(query)
+    );
+  });
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -91,9 +108,9 @@ const Invoices = () => {
               <CardDescription>Total Outstanding</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$339,000.00</div>
+              <div className="text-2xl font-bold">{isDataLoaded ? "$339,000.00" : "$0.00"}</div>
               <p className="text-xs text-muted-foreground mt-1">
-                Across 5 invoices
+                {isDataLoaded ? "Across 5 invoices" : "No invoices"}
               </p>
             </CardContent>
           </Card>
@@ -102,7 +119,7 @@ const Invoices = () => {
               <CardDescription>Avg. Invoice Value</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$67,800.00</div>
+              <div className="text-2xl font-bold">{isDataLoaded ? "$67,800.00" : "$0.00"}</div>
               <p className="text-xs text-muted-foreground mt-1">
                 Per invoice
               </p>
@@ -113,7 +130,7 @@ const Invoices = () => {
               <CardDescription>Avg. Days Outstanding</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">18 days</div>
+              <div className="text-2xl font-bold">{isDataLoaded ? "18 days" : "0 days"}</div>
               <p className="text-xs text-muted-foreground mt-1">
                 Average aging
               </p>
@@ -131,54 +148,78 @@ const Invoices = () => {
               </div>
               <div className="relative w-64">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search invoices..." className="pl-8" />
+                <Input
+                  placeholder="Search invoices..."
+                  className="pl-8"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
               </div>
             </div>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Invoice ID</TableHead>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Matter</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Due Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {invoices.map((invoice) => (
-                  <TableRow key={invoice.id} className="hover:bg-secondary/50">
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                        {invoice.id}
-                      </div>
-                    </TableCell>
-                    <TableCell>{invoice.client}</TableCell>
-                    <TableCell>
-                      <span className="text-muted-foreground">{invoice.matter}</span>
-                    </TableCell>
-                    <TableCell>{invoice.date}</TableCell>
-                    <TableCell className="font-semibold">{invoice.amount}</TableCell>
-                    <TableCell>{invoice.dueDate}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="bg-warning/10 text-warning">
-                        Pending
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="sm">
-                        View
-                      </Button>
-                    </TableCell>
+            {!isDataLoaded || filteredInvoices.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <Inbox className="h-12 w-12 text-muted-foreground mb-4" />
+                <p className="text-muted-foreground mb-2">
+                  {!isDataLoaded
+                    ? "No data uploaded yet"
+                    : "No invoices found matching your search"}
+                </p>
+                {!isDataLoaded && (
+                  <Link to="/upload">
+                    <Button variant="outline" className="mt-4">
+                      <Upload className="mr-2 h-4 w-4" />
+                      Upload Data
+                    </Button>
+                  </Link>
+                )}
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Invoice ID</TableHead>
+                    <TableHead>Client</TableHead>
+                    <TableHead>Matter</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Due Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredInvoices.map((invoice) => (
+                    <TableRow key={invoice.id} className="hover:bg-secondary/50">
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          {invoice.id}
+                        </div>
+                      </TableCell>
+                      <TableCell>{invoice.client}</TableCell>
+                      <TableCell>
+                        <span className="text-muted-foreground">{invoice.matter}</span>
+                      </TableCell>
+                      <TableCell>{invoice.date}</TableCell>
+                      <TableCell className="font-semibold">{invoice.amount}</TableCell>
+                      <TableCell>{invoice.dueDate}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="bg-warning/10 text-warning">
+                          Pending
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm">
+                          View
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       </div>

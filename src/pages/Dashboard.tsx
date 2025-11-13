@@ -11,41 +11,47 @@ import {
   ArrowUpRight,
   Clock,
   Zap,
+  Upload,
+  Inbox,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
+import { useData } from "@/context/DataContext";
 
 const Dashboard = () => {
+  const { isDataLoaded } = useData();
+
+  // Original dummy data
   const stats = [
     {
       title: "Total Processed",
-      value: "$2,847,290",
-      change: "+12.5%",
-      trend: "up",
+      value: isDataLoaded ? "$2,847,290" : "$0.00",
+      change: isDataLoaded ? "+12.5%" : "N/A",
+      trend: "up" as const,
       icon: DollarSign,
       color: "text-primary",
     },
     {
       title: "Match Rate",
-      value: "98.2%",
-      change: "+2.1%",
-      trend: "up",
+      value: isDataLoaded ? "98.2%" : "0%",
+      change: isDataLoaded ? "+2.1%" : "N/A",
+      trend: "up" as const,
       icon: CheckCircle,
       color: "text-success",
     },
     {
       title: "Pending Review",
-      value: "23",
-      change: "-8",
-      trend: "down",
+      value: isDataLoaded ? "23" : "0",
+      change: isDataLoaded ? "-8" : "N/A",
+      trend: "down" as const,
       icon: AlertCircle,
       color: "text-warning",
     },
     {
       title: "Auto-Posted",
-      value: "487",
-      change: "+94",
-      trend: "up",
+      value: isDataLoaded ? "487" : "0",
+      change: isDataLoaded ? "+94" : "N/A",
+      trend: "up" as const,
       icon: Zap,
       color: "text-accent",
     },
@@ -140,37 +146,50 @@ const Dashboard = () => {
               <CardDescription>Latest AI-matched transactions</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {recentMatches.map((match) => (
-                  <div
-                    key={match.id}
-                    className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-secondary/50 transition-colors"
-                  >
-                    <div className="flex-1">
-                      <div className="font-medium text-sm">{match.payer}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {match.id} → {match.invoice}
-                      </div>
-                    </div>
-                    <div className="text-right mr-4">
-                      <div className="font-semibold text-sm">{match.amount}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {match.confidence}% confidence
-                      </div>
-                    </div>
-                    <Badge
-                      variant={match.status === "posted" ? "default" : "secondary"}
-                      className={
-                        match.status === "posted"
-                          ? "bg-success/10 text-success hover:bg-success/20"
-                          : "bg-warning/10 text-warning hover:bg-warning/20"
-                      }
+              {!isDataLoaded ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Inbox className="h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground mb-4">No data uploaded yet</p>
+                  <Link to="/upload">
+                    <Button variant="outline">
+                      <Upload className="mr-2 h-4 w-4" />
+                      Upload Data
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {recentMatches.map((match) => (
+                    <div
+                      key={match.id}
+                      className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-secondary/50 transition-colors"
                     >
-                      {match.status === "posted" ? "Posted" : "Review"}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
+                      <div className="flex-1">
+                        <div className="font-medium text-sm">{match.payer}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {match.id} → {match.invoice}
+                        </div>
+                      </div>
+                      <div className="text-right mr-4">
+                        <div className="font-semibold text-sm">{match.amount}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {match.confidence}% confidence
+                        </div>
+                      </div>
+                      <Badge
+                        variant={match.status === "posted" ? "default" : "secondary"}
+                        className={
+                          match.status === "posted"
+                            ? "bg-success/10 text-success hover:bg-success/20"
+                            : "bg-warning/10 text-warning hover:bg-warning/20"
+                        }
+                      >
+                        {match.status === "posted" ? "Posted" : "Review"}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -186,23 +205,23 @@ const Dashboard = () => {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium">Auto-Match Rate</span>
-                    <span className="text-sm text-muted-foreground">98.2%</span>
+                    <span className="text-sm text-muted-foreground">{isDataLoaded ? "98.2%" : "0%"}</span>
                   </div>
-                  <Progress value={98.2} className="h-2" />
+                  <Progress value={isDataLoaded ? 98.2 : 0} className="h-2" />
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium">Processing Speed</span>
-                    <span className="text-sm text-muted-foreground">92%</span>
+                    <span className="text-sm text-muted-foreground">{isDataLoaded ? "92%" : "0%"}</span>
                   </div>
-                  <Progress value={92} className="h-2" />
+                  <Progress value={isDataLoaded ? 92 : 0} className="h-2" />
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium">Data Quality</span>
-                    <span className="text-sm text-muted-foreground">96%</span>
+                    <span className="text-sm text-muted-foreground">{isDataLoaded ? "96%" : "0%"}</span>
                   </div>
-                  <Progress value={96} className="h-2" />
+                  <Progress value={isDataLoaded ? 96 : 0} className="h-2" />
                 </div>
               </CardContent>
             </Card>
